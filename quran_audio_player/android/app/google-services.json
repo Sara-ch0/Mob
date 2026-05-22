@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "584867798246",
+    "project_id": "tartil-f9190",
+    "storage_bucket": "tartil-f9190.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:584867798246:android:dfb4a3da81210266012f27",
+        "android_client_info": {
+          "package_name": "com.quranapp.quran_audio_player"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA_2wMGr2mVhDxTgz-u6tXmWDH3s-pv6TA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
