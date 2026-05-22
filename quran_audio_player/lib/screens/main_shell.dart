@@ -4,6 +4,7 @@ import '../providers/theme_provider.dart';
 import '../utils/app_theme.dart';
 import '../services/auth_service.dart';
 import '../widgets/animated_nav_bar.dart';
+import '../widgets/user_avatar.dart';
 import 'login_screen.dart';
 import 'stats_screen.dart';
 import 'player_screen.dart';
@@ -18,16 +19,32 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _index = 0;
-
   int _statsKey = 0;
   int _settingsKey = 0;
+  int _favouritesKey = 0;
+  String? _firstName;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final profile = await AuthService.getProfile();
+    if (mounted) {
+      setState(() => _firstName = profile?['firstName'] as String?);
+    }
+  }
+
+  String get _userKey => AuthService.currentUser?.uid ?? 'guest';
 
   List<Widget> get _screens => [
-    StatsScreen(key: ValueKey('stats_$_statsKey')),
-    const PlayerScreen(),
-    const FavouritesScreen(),
-    SettingsScreen(key: ValueKey('settings_$_settingsKey')),
-  ];
+        StatsScreen(key: ValueKey('stats_$_statsKey')),
+        PlayerScreen(key: ValueKey('player_$_userKey')),
+        FavouritesScreen(key: ValueKey('fav_$_favouritesKey')),
+        SettingsScreen(key: ValueKey('settings_$_settingsKey')),
+      ];
 
   static const _navItems = [
     AnimatedNavItem(
@@ -72,7 +89,6 @@ class _MainShellState extends State<MainShell> {
           ),
         ),
         actions: [
-          // Page label chip
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 250),
             child: Container(
@@ -95,8 +111,6 @@ class _MainShellState extends State<MainShell> {
               ),
             ),
           ),
-
-          // ── Theme toggle ───────────────────────────────────────────────
           Consumer<ThemeProvider>(
             builder: (_, tp, __) => IconButton(
               icon: Icon(
@@ -110,8 +124,6 @@ class _MainShellState extends State<MainShell> {
               tooltip: tp.isDark ? 'Switch to light' : 'Switch to dark',
             ),
           ),
-
-          // ── Profile popup ──────────────────────────────────────────────
           PopupMenuButton<String>(
             offset: const Offset(0, 50),
             color: AppTheme.surfaceCard,
@@ -149,17 +161,7 @@ class _MainShellState extends State<MainShell> {
             ],
             child: Padding(
               padding: const EdgeInsets.only(right: 16),
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                      color: AppTheme.accentGold.withValues(alpha: 0.4),
-                      width: 1.5),
-                ),
-                child: const CircleAvatar(
-                    radius: 15,
-                    backgroundImage: NetworkImage(AppTheme.playerArt)),
-              ),
+              child: UserAvatar(firstName: _firstName, radius: 15),
             ),
           ),
         ],
@@ -171,8 +173,12 @@ class _MainShellState extends State<MainShell> {
         onTap: (i) {
           setState(() {
             _index = i;
-            if (i == 0) _statsKey++; // Force StatsScreen to remount and fetch fresh data
-            if (i == 3) _settingsKey++; // Force SettingsScreen to remount
+            if (i == 0) _statsKey++;
+            if (i == 2) _favouritesKey++;
+            if (i == 3) {
+              _settingsKey++;
+              _loadProfile();
+            }
           });
         },
       ),

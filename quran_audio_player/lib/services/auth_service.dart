@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../main.dart';
 import 'download_service.dart';
 import 'notification_service.dart';
+import 'resume_service.dart';
 
 class AuthService {
   static final _auth = FirebaseAuth.instance;
@@ -69,6 +70,7 @@ class AuthService {
     try {
       await audioHandler.stop();
     } catch (_) {}
+    await ResumeService.clear();
     await DownloadService.clear();
     await NotificationService.clear();
     await _auth.signOut();

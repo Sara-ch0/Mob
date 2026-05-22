@@ -327,12 +327,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
             child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-              const Text('CONTINUE LISTENING',
+              const Text('TU ÉTAIS EN TRAIN D\'ÉCOUTER :',
                   style: TextStyle(
                       color: AppTheme.accentGold,
                       fontSize: 9,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: 1.2)),
+                      letterSpacing: 1.0)),
               const SizedBox(height: 3),
               Text(data['surahEnglishName'] as String,
                   style: const TextStyle(

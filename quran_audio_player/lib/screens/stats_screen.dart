@@ -615,10 +615,15 @@ class _TrackItemState extends State<_TrackItem>
               ),
             ),
             const SizedBox(width: 14),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(AppTheme.playerArt,
-                  width: 42, height: 42, fit: BoxFit.cover),
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                gradient: AppTheme.goldGradient,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.music_note_rounded,
+                  color: Colors.black, size: 22),
             ),
             const SizedBox(width: 12),
             Expanded(

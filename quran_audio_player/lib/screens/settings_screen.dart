@@ -6,6 +6,7 @@ import '../services/download_service.dart';
 import '../services/firestore_service.dart';
 import '../services/notification_service.dart';
 import '../utils/app_theme.dart';
+import '../widgets/user_avatar.dart';
 import 'login_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -261,26 +262,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
               child: Column(children: [
-                // Avatar
-                Container(
-                  width: 68,
-                  height: 68,
-                  decoration: BoxDecoration(
-                    gradient: AppTheme.goldGradient,
-                    shape: BoxShape.circle,
-                    boxShadow: AppTheme.goldGlow(opacity: 0.25, blur: 12),
-                  ),
-                  child: Center(
-                    child: Text(
-                      (_profile?['firstName'] as String? ?? 'U')
-                          .substring(0, 1)
-                          .toUpperCase(),
-                      style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800),
-                    ),
-                  ),
+                UserAvatar(
+                  firstName: _profile?['firstName'] as String?,
+                  radius: 34,
+                  showBorder: false,
                 ),
                 const SizedBox(height: 12),
                 Text(

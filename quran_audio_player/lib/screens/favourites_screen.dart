@@ -21,16 +21,38 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
   bool _selectionMode = false;
   final Set<String> _selectedIds = {};
   List<Surah> _allSurahs = [];
+  List<Reciter> _downloadedReciters = [];
+  bool _loadingDownloads = true;
 
   @override
   void initState() {
     super.initState();
     _loadSurahs();
+    _refreshDownloads();
+    DownloadService.downloadedUrls.addListener(_onDownloadsChanged);
   }
+
+  @override
+  void dispose() {
+    DownloadService.downloadedUrls.removeListener(_onDownloadsChanged);
+    super.dispose();
+  }
+
+  void _onDownloadsChanged() => _refreshDownloads();
 
   Future<void> _loadSurahs() async {
     final s = await QuranApiService.fetchSurahs();
     if (mounted) setState(() => _allSurahs = s);
+  }
+
+  Future<void> _refreshDownloads() async {
+    final list = await DownloadService.getDownloadedReciters();
+    if (mounted) {
+      setState(() {
+        _downloadedReciters = list;
+        _loadingDownloads = false;
+      });
+    }
   }
 
   void _toggleSelection(String id) {
@@ -310,105 +332,101 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
 
   // ─── DOWNLOADS TAB ───────────────────────────────────────────────────────────
   Widget _buildDownloadsTab() {
-    return ValueListenableBuilder<Set<String>>(
-      valueListenable: DownloadService.downloadedUrls,
-      builder: (context, downloadedUrls, child) {
-        if (downloadedUrls.isEmpty) {
-          return Center(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.download_done_rounded,
-                  color: AppTheme.textMuted, size: 48),
-              const SizedBox(height: 20),
-              const Text('No downloads yet',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.primaryText)),
-              const SizedBox(height: 8),
-              const Text('Surahs you download will appear here',
-                  style:
-                      TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
-            ]),
-          );
-        }
+    if (_loadingDownloads) {
+      return const Center(
+          child: CircularProgressIndicator(color: AppTheme.accentGold));
+    }
 
-        // Match downloaded URLs with Reciter info
-        final downloadedReciters = <Reciter>[];
-        for (final surah in _allSurahs) {
-          for (final r in surah.reciters) {
-            if (downloadedUrls.contains(r.audioUrl)) {
-              downloadedReciters.add(r);
-            }
-          }
-        }
+    if (_downloadedReciters.isEmpty) {
+      return Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.download_done_rounded,
+              color: AppTheme.textMuted, size: 48),
+          const SizedBox(height: 20),
+          const Text('No downloads yet',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.primaryText)),
+          const SizedBox(height: 8),
+          const Text('Surahs you download will appear here',
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
+        ]),
+      );
+    }
 
-        if (_allSurahs.isEmpty) {
-          return const Center(
-              child: CircularProgressIndicator(color: AppTheme.accentGold));
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-          itemCount: downloadedReciters.length,
-          itemBuilder: (context, i) {
-            final r = downloadedReciters[i];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Container(
-                decoration: AppTheme.cardDecoration(),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  leading: Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      gradient: AppTheme.goldGradient,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.play_arrow,
-                        color: Colors.black, size: 22),
+    return RefreshIndicator(
+      onRefresh: _refreshDownloads,
+      color: AppTheme.accentGold,
+      backgroundColor: AppTheme.surfaceCard,
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+        itemCount: _downloadedReciters.length,
+        itemBuilder: (context, i) {
+          final r = _downloadedReciters[i];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Container(
+              decoration: AppTheme.cardDecoration(),
+              child: ListTile(
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                leading: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.goldGradient,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  title: Text(r.surahEnglishName,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          color: AppTheme.primaryText)),
-                  subtitle: Text(r.name,
-                      style: const TextStyle(
-                          fontSize: 12, color: AppTheme.textSecondary)),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline,
-                        color: AppTheme.errorColor),
-                    onPressed: () => DownloadService.delete(r.audioUrl),
-                  ),
-                  onTap: () async {
-                    final local = await DownloadService.getLocalPath(r.audioUrl);
-                    final url = local != null ? 'file://$local' : r.audioUrl;
-                    final handler = audioHandler as QuranAudioHandler;
-                    await handler.playUrl(url, MediaItem(
-                        id: url, title: r.surahEnglishName, artist: r.name));
-                    
-                    if (mounted) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => AudioPlayerPage(
-                            reciter: r,
-                            handler: handler,
-                            isFavourite: false,
-                            onToggleFav: (_) async {},
-                            surahs: _allSurahs,
-                          ),
-                        ),
-                      );
-                    }
+                  child: const Icon(Icons.play_arrow,
+                      color: Colors.black, size: 22),
+                ),
+                title: Text(r.surahEnglishName,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: AppTheme.primaryText)),
+                subtitle: Text(r.name,
+                    style: const TextStyle(
+                        fontSize: 12, color: AppTheme.textSecondary)),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete_outline,
+                      color: AppTheme.errorColor),
+                  onPressed: () async {
+                    await DownloadService.delete(r.audioUrl);
+                    await _refreshDownloads();
                   },
                 ),
+                onTap: () => _playDownloaded(r),
               ),
-            );
-          },
-        );
-      },
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _playDownloaded(Reciter r) async {
+    final local = await DownloadService.getLocalPath(r.audioUrl);
+    final url = local != null ? 'file://$local' : r.audioUrl;
+    final handler = audioHandler as QuranAudioHandler;
+    await handler.playUrl(url, MediaItem(
+        id: url, title: r.surahEnglishName, artist: r.name));
+
+    if (!mounted) return;
+    if (_allSurahs.isEmpty) await _loadSurahs();
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AudioPlayerPage(
+          reciter: r,
+          handler: handler,
+          isFavourite: false,
+          onToggleFav: (_) async {},
+          surahs: _allSurahs,
+        ),
+      ),
     );
   }
 }
